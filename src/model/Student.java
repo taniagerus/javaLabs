@@ -50,9 +50,9 @@ public class Student {
                 .map(Subject::toString)
                 .collect(Collectors.joining(", "));
         String workplacePart = isPartTime() ? ", workplace: " + workplace : "";
-        return "%s %s , group: %s, subjects: %s%s".formatted(
+        return "%s %s, group: %s, subjects: [%s]%s".formatted(
                 firstName, lastName, groupNumber, subjectsString, workplacePart
         );
-
     }
+
 }

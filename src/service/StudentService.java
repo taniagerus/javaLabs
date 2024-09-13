@@ -3,15 +3,11 @@ package service;
 import model.Student;
 import model.Subject;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class StudentService {
 
-    //TODO: define
     private static final String filePath = "./students";
 
     public static List<Student> getAllStudents() {
@@ -24,16 +20,18 @@ public class StudentService {
         Map<Boolean, List<Student>> studentsGroupedByIsPartTime = students.stream()
                 .collect(Collectors.groupingBy(Student::isPartTime));
 
-        System.out.println("Zao4ni hui");
-        printStudents(studentsGroupedByIsPartTime.get(true));
-        System.out.println("Ne zao4ni");
-        printStudents(studentsGroupedByIsPartTime.get(false));
+        System.out.println("Part-time students:");
+        printStudents(studentsGroupedByIsPartTime.getOrDefault(true, List.of()));
+        System.out.println("Full-time students:");
+        printStudents(studentsGroupedByIsPartTime.getOrDefault(false, List.of()));
     }
 
-    //TODO: перевірка чи пустий список
     private static void printStudents(List<Student> students) {
-
-        students.forEach(System.out::println);
+        if (students.isEmpty()) {
+            System.out.println("No students to display.");
+        } else {
+            students.forEach(System.out::println);
+        }
     }
 
     public static void groupByGroupNumber(List<Student> students) {
@@ -47,12 +45,12 @@ public class StudentService {
 
     public static void getStudentsGroupedByGrade(List<Student> students, String subjectName) {
         students.stream()
-                // Фільтруємо тільки тих студентів, які мають потрібний предмет у списку
                 .flatMap(student -> student.getSubjects().stream()
                         .filter(subject -> subject.getName().equals(subjectName))
-                        // Перетворюємо Subject в Map.Entry<Integer, String> де ключ - оцінка, значення - прізвище
-                        .map(subject -> Map.entry(subject.getGrade(), student.getLastName())))
-                // Групуємо прізвища студентів за оцінками
+                        // Convert Subject to a stream of grades with student last names
+                        .flatMap(subject -> subject.getGrades().stream()
+                                .map(grade -> Map.entry(grade, student.getLastName())))
+                )
                 .collect(Collectors.groupingBy(Map.Entry::getKey,
                         Collectors.mapping(Map.Entry::getValue, Collectors.toList())))
                 .forEach((key, value) -> {
@@ -60,18 +58,21 @@ public class StudentService {
                     value.forEach(System.out::println);
                 });
     }
+
     private static double calculateAverageGrade(Student student) {
         return student.getSubjects().stream()
-                .mapToDouble(Subject::getGrade)
+                .flatMap(subject -> subject.getGrades().stream())
+                .mapToDouble(grade -> grade)
                 .average()
-                .orElse(0.0); // Якщо немає предметів, середній бал = 0
+                .orElse(0.0); // If no grades, average = 0
     }
+
     public static List<Student> sortByAverageGrade(List<Student> students) {
         List<Student> sortedStudents = students.stream()
                 .sorted(Comparator.comparingDouble(StudentService::calculateAverageGrade).reversed())
                 .collect(Collectors.toList());
 
-        System.out.println("Students sorted by avarage grade");
+        System.out.println("Students sorted by average grade:");
         printStudents(sortedStudents);
 
         return sortedStudents;
@@ -81,10 +82,9 @@ public class StudentService {
         Set<String> uniqueSubjects = students.stream()
                 .flatMap(student -> student.getSubjects().stream())
                 .map(Subject::getName)
-                .collect(Collectors.toSet()); // Використовуємо Set для уникнення дублікатів
+                .collect(Collectors.toSet()); // Use Set to avoid duplicates
 
         System.out.println("Unique subjects:");
         uniqueSubjects.forEach(System.out::println);
     }
-
 }
