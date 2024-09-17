@@ -5,22 +5,19 @@ import model.Subject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class StudentMapper {
 
     public static Student parseStudent(String line) {
-        // Split by the first occurrence of '[' to separate student info from subjects
         String[] parts = line.split("\\[", 2);
         if (parts.length < 2) {
             throw new IllegalArgumentException("Invalid input format: Missing subject data.");
         }
 
-        // Extract student information and subject parts
         String infoPart = parts[0].trim();
         String subjectsPart = parts[1].trim();
 
-        // Split student information
         String[] info = infoPart.split("\\s+");
         if (info.length < 3) {
             throw new IllegalArgumentException("Invalid input format: Missing student information.");
@@ -40,19 +37,15 @@ public class StudentMapper {
     private static List<Subject> parseSubjects(String subjectsPart) {
         List<Subject> subjects = new ArrayList<>();
 
-        // Remove trailing ']'
         subjectsPart = subjectsPart.replaceAll("]$", "");
 
-        // Split by '][' to handle multiple subjects
-        String[] subjectEntries = subjectsPart.split("\\]\\s*\\[");
+        String[] subjectEntries = subjectsPart.split("]\\s*\\[");
 
         for (String entry : subjectEntries) {
-            // Clean up entry
-            entry = entry.trim().replaceAll("^\\[|\\]$", "");
+            entry = entry.trim().replaceAll("^\\[|]$", "");
             int colonIndex = entry.indexOf(":");
-            if (colonIndex < 0) {
-                System.err.println("Invalid subject format: " + entry);
-                continue;
+            if (colonIndex < 1) {
+                throw new IllegalArgumentException("Invalid subject format: " + entry);
             }
 
             String subjectName = entry.substring(0, colonIndex).trim();
@@ -66,19 +59,16 @@ public class StudentMapper {
     }
 
     private static List<Double> parseGrades(String gradesPart) {
-        return List.of(gradesPart.split(","))
-                .stream()
+        return Stream.of(gradesPart.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(grade -> {
                     try {
                         return Double.parseDouble(grade);
                     } catch (NumberFormatException e) {
-                        System.err.println("Invalid grade format: " + grade);
-                        return null;
+                        throw new IllegalArgumentException("Invalid grade format: " + grade);
                     }
                 })
-                .filter(grade -> grade != null)
-                .collect(Collectors.toList());
+                .toList();
     }
 }
